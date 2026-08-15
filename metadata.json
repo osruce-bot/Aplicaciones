@@ -1,0 +1,6 @@
+{
+  "name": "APP ORC",
+  "description": "Panel centralizado y seguro para organizar, gestionar y lanzar aplicaciones con interfaz oscura y autenticación de sesión.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
