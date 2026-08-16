@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, FormEvent, DragEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent, DragEvent } from 'react';
 import {
   Search,
   Trash2,
@@ -86,6 +86,7 @@ export default function App() {
   const [dragOverCategory, setDragOverCategory] = useState<string | null>(null);
   const [dragOverAppId, setDragOverAppId] = useState<string | null>(null);
   const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<number | null>(null);
+  const justDraggedRef = useRef(false);
 
   // Modals state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -281,12 +282,27 @@ export default function App() {
     setMoveModal({ open: false, appId: '', appName: '', sourceCategory: '', targetCategory: '' });
   };
 
-  // Drag & Drop logic for Apps
+  // Drag & Drop logic for Apps (Same Column Reordering & Cross Column Moving)
   const handleAppDragStart = (e: DragEvent, appId: string, categoryName: string) => {
+    justDraggedRef.current = true;
     setDraggedApp({ appId, categoryName });
     e.dataTransfer.setData('text/app-id', appId);
     e.dataTransfer.setData('text/category-name', categoryName);
     e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleAppDragEnd = () => {
+    setDraggedApp(null);
+    setDragOverCategory(null);
+    setDragOverAppId(null);
+    setTimeout(() => {
+      justDraggedRef.current = false;
+    }, 150);
+  };
+
+  const handleCardClick = (url: string) => {
+    if (justDraggedRef.current) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleAppDragOverCategory = (e: DragEvent, categoryName: string) => {
@@ -297,6 +313,15 @@ export default function App() {
     }
   };
 
+  const handleAppDragOverApp = (e: DragEvent, appId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverAppId !== appId) {
+      setDragOverAppId(appId);
+    }
+  };
+
   const handleAppDropOnCategory = (e: DragEvent, targetCategoryName: string) => {
     e.preventDefault();
     setDragOverCategory(null);
@@ -304,8 +329,6 @@ export default function App() {
 
     if (!draggedApp) return;
     const { appId, categoryName: sourceCategoryName } = draggedApp;
-
-    if (sourceCategoryName === targetCategoryName) return;
 
     setCategories(prev => {
       let movedApp: AppType | undefined;
@@ -327,7 +350,7 @@ export default function App() {
       });
     });
 
-    setDraggedApp(null);
+    handleAppDragEnd();
   };
 
   const handleAppDropOnApp = (e: DragEvent, targetAppId: string, targetCategoryName: string) => {
@@ -338,7 +361,10 @@ export default function App() {
 
     if (!draggedApp) return;
     const { appId, categoryName: sourceCategoryName } = draggedApp;
-    if (appId === targetAppId) return;
+    if (appId === targetAppId) {
+      handleAppDragEnd();
+      return;
+    }
 
     setCategories(prev => {
       let appToMove: AppType | undefined;
@@ -368,7 +394,7 @@ export default function App() {
       });
     });
 
-    setDraggedApp(null);
+    handleAppDragEnd();
   };
 
   const resetApps = () => {
@@ -958,30 +984,35 @@ export default function App() {
                     </div>
 
                     {/* Apps List Inside Column: Scrollable on Desktop, naturally expanded on Mobile */}
-                    <div className="flex-1 p-2 space-y-1.5 md:overflow-y-auto custom-scrollbar">
+                    <div
+                      onDragOver={e => handleAppDragOverCategory(e, category.name)}
+                      onDrop={e => handleAppDropOnCategory(e, category.name)}
+                      className={cn(
+                        "flex-1 p-2 space-y-1.5 md:overflow-y-auto custom-scrollbar transition-colors rounded-b-xl",
+                        dragOverCategory === category.name && "bg-coral/5 ring-1 ring-coral/30"
+                      )}
+                    >
                       {category.apps.map(app => (
                         <div
                           key={app.id}
                           draggable
                           onDragStart={e => handleAppDragStart(e, app.id, category.name)}
-                          onDragOver={e => {
-                            e.preventDefault();
-                            setDragOverAppId(app.id);
-                          }}
+                          onDragEnd={handleAppDragEnd}
+                          onDragOver={e => handleAppDragOverApp(e, app.id)}
                           onDrop={e => handleAppDropOnApp(e, app.id, category.name)}
-                          onClick={() => window.open(app.url, '_blank', 'noopener,noreferrer')}
+                          onClick={() => handleCardClick(app.url)}
                           className={cn(
-                            'group relative bg-slate-950/70 p-3 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 shadow-xs hover:border-coral/90 hover:bg-slate-900/90 hover:shadow-lg hover:shadow-coral/10 cursor-pointer active:scale-[0.99]',
+                            'group relative bg-slate-950/70 p-3 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 shadow-xs hover:border-coral/90 hover:bg-slate-900/90 hover:shadow-lg hover:shadow-coral/10 cursor-grab active:cursor-grabbing select-none',
                             dragOverAppId === app.id
-                              ? 'border-coral ring-1 ring-coral bg-coral/10'
-                              : 'border-slate-800/90'
+                              ? 'border-coral ring-2 ring-coral bg-coral/20 scale-[1.02]'
+                              : 'border-slate-800/90',
+                            draggedApp?.appId === app.id && 'opacity-40 border-dashed border-coral scale-95'
                           )}
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <GripVertical
                               size={14}
-                              onClick={e => e.stopPropagation()}
-                              className="text-slate-600 shrink-0 group-hover:text-coral transition-colors cursor-grab hidden md:block"
+                              className="text-slate-500 shrink-0 group-hover:text-coral transition-colors"
                             />
                             {/* Full name in UPPERCASE and larger font size */}
                             <span className="font-extrabold text-sm text-slate-100 uppercase tracking-wide group-hover:text-coral transition-colors leading-snug break-words flex-1">
@@ -1079,7 +1110,15 @@ export default function App() {
                 className="h-full overflow-y-auto p-3 md:p-5 max-w-7xl mx-auto space-y-4"
               >
                 {filteredCategories.map(category => (
-                  <div key={category.name} className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-xs">
+                  <div
+                    key={category.name}
+                    onDragOver={e => handleAppDragOverCategory(e, category.name)}
+                    onDrop={e => handleAppDropOnCategory(e, category.name)}
+                    className={cn(
+                      "bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-xs transition-colors",
+                      dragOverCategory === category.name && "border-coral/60 bg-slate-900"
+                    )}
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-3.5 bg-coral rounded-full" />
@@ -1111,12 +1150,24 @@ export default function App() {
                       {category.apps.map(app => (
                         <div
                           key={app.id}
-                          onClick={() => window.open(app.url, '_blank', 'noopener,noreferrer')}
-                          className="group flex items-center justify-between p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-coral hover:bg-slate-900/90 transition-colors gap-2 cursor-pointer"
+                          draggable
+                          onDragStart={e => handleAppDragStart(e, app.id, category.name)}
+                          onDragEnd={handleAppDragEnd}
+                          onDragOver={e => handleAppDragOverApp(e, app.id)}
+                          onDrop={e => handleAppDropOnApp(e, app.id, category.name)}
+                          onClick={() => handleCardClick(app.url)}
+                          className={cn(
+                            "group flex items-center justify-between p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-coral hover:bg-slate-900/90 transition-all gap-2 cursor-grab active:cursor-grabbing select-none",
+                            dragOverAppId === app.id && "border-coral ring-2 ring-coral bg-coral/20 scale-[1.02]",
+                            draggedApp?.appId === app.id && "opacity-40 border-dashed border-coral scale-95"
+                          )}
                         >
-                          <span className="text-sm font-bold uppercase text-slate-100 group-hover:text-coral leading-snug break-words flex-1 min-w-0">
-                            {app.name}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                            <GripVertical size={13} className="text-slate-600 group-hover:text-coral shrink-0" />
+                            <span className="text-sm font-bold uppercase text-slate-100 group-hover:text-coral leading-snug break-words flex-1 min-w-0">
+                              {app.name}
+                            </span>
+                          </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={e => {
@@ -1159,7 +1210,10 @@ export default function App() {
                     key={category.name}
                     onDragOver={e => handleAppDragOverCategory(e, category.name)}
                     onDrop={e => handleAppDropOnCategory(e, category.name)}
-                    className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3.5"
+                    className={cn(
+                      "rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3.5 transition-colors",
+                      dragOverCategory === category.name && "border-coral/60 bg-slate-900"
+                    )}
                   >
                     {/* Header */}
                     <div className="flex items-center justify-between gap-3 mb-3">
@@ -1213,13 +1267,25 @@ export default function App() {
                       {category.apps.map(app => (
                         <div
                           key={app.id}
-                          onClick={() => window.open(app.url, '_blank', 'noopener,noreferrer')}
-                          className="group bg-slate-950 p-3.5 rounded-xl border border-slate-800 hover:border-coral hover:bg-slate-900/80 transition-all flex flex-col justify-between gap-3 shadow-xs cursor-pointer active:scale-[0.99]"
+                          draggable
+                          onDragStart={e => handleAppDragStart(e, app.id, category.name)}
+                          onDragEnd={handleAppDragEnd}
+                          onDragOver={e => handleAppDragOverApp(e, app.id)}
+                          onDrop={e => handleAppDropOnApp(e, app.id, category.name)}
+                          onClick={() => handleCardClick(app.url)}
+                          className={cn(
+                            "group bg-slate-950 p-3.5 rounded-xl border border-slate-800 hover:border-coral hover:bg-slate-900/80 transition-all flex flex-col justify-between gap-3 shadow-xs cursor-grab active:cursor-grabbing select-none",
+                            dragOverAppId === app.id && "border-coral ring-2 ring-coral bg-coral/20 scale-[1.02]",
+                            draggedApp?.appId === app.id && "opacity-40 border-dashed border-coral scale-95"
+                          )}
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-extrabold text-sm uppercase tracking-wide leading-snug text-slate-100 group-hover:text-coral transition-colors break-words">
-                              {app.name}
-                            </h4>
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                              <GripVertical size={14} className="text-slate-600 group-hover:text-coral shrink-0" />
+                              <h4 className="font-extrabold text-sm uppercase tracking-wide leading-snug text-slate-100 group-hover:text-coral transition-colors break-words flex-1">
+                                {app.name}
+                              </h4>
+                            </div>
                             <ExternalLink size={14} className="text-slate-500 group-hover:text-coral shrink-0 mt-0.5" />
                           </div>
                           <div className="pt-2 border-t border-slate-850 flex items-center justify-end gap-1">
