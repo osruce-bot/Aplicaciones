@@ -969,27 +969,29 @@ export default function App() {
                             setDragOverAppId(app.id);
                           }}
                           onDrop={e => handleAppDropOnApp(e, app.id, category.name)}
+                          onClick={() => window.open(app.url, '_blank', 'noopener,noreferrer')}
                           className={cn(
-                            'group relative bg-slate-950/70 p-2.5 rounded-lg border transition-all duration-150 flex flex-col justify-between gap-2 shadow-xs hover:border-coral/80 hover:bg-slate-950',
+                            'group relative bg-slate-950/70 p-3 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 shadow-xs hover:border-coral/90 hover:bg-slate-900/90 hover:shadow-lg hover:shadow-coral/10 cursor-pointer active:scale-[0.99]',
                             dragOverAppId === app.id
                               ? 'border-coral ring-1 ring-coral bg-coral/10'
                               : 'border-slate-800/90'
                           )}
                         >
-                          <div className="flex items-start justify-between gap-1.5">
-                            <div className="flex items-start gap-1.5 flex-1 min-w-0">
-                              <GripVertical
-                                size={12}
-                                className="text-slate-600 mt-0.5 shrink-0 group-hover:text-coral transition-colors cursor-grab hidden md:block"
-                              />
-                              {/* Full name without cuts */}
-                              <span className="font-semibold text-xs text-slate-100 group-hover:text-coral transition-colors leading-snug break-words">
-                                {app.name}
-                              </span>
-                            </div>
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <GripVertical
+                              size={14}
+                              onClick={e => e.stopPropagation()}
+                              className="text-slate-600 shrink-0 group-hover:text-coral transition-colors cursor-grab hidden md:block"
+                            />
+                            {/* Full name in UPPERCASE and larger font size */}
+                            <span className="font-extrabold text-sm text-slate-100 uppercase tracking-wide group-hover:text-coral transition-colors leading-snug break-words flex-1">
+                              {app.name}
+                            </span>
+                          </div>
 
-                            {/* Card Menu Actions - always visible on mobile for easy touch access */}
-                            <div className="flex items-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
+                          <div className="flex items-center gap-1 shrink-0">
+                            {/* Card Action Buttons (stopPropagation so clicking them doesn't open the app link) */}
+                            <div className="flex items-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                               <button
                                 onClick={e => {
                                   e.stopPropagation();
@@ -1002,10 +1004,10 @@ export default function App() {
                                     targetCategory: firstOtherCat
                                   });
                                 }}
-                                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                                 title="Mover a otra categoría"
                               >
-                                <FolderOutput size={12} />
+                                <FolderOutput size={13} />
                               </button>
                               <button
                                 onClick={e => {
@@ -1019,34 +1021,28 @@ export default function App() {
                                     url: app.url
                                   });
                                 }}
-                                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                                 title="Editar app"
                               >
-                                <Edit3 size={12} />
+                                <Edit3 size={13} />
                               </button>
                               <button
                                 onClick={e => {
                                   e.stopPropagation();
                                   uninstallApp(app.id, app.name);
                                 }}
-                                className="p-1 rounded text-slate-400 hover:text-coral hover:bg-coral/20"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-coral hover:bg-coral/20 transition-colors"
                                 title="Eliminar app"
                               >
-                                <Trash2 size={12} />
+                                <Trash2 size={13} />
                               </button>
                             </div>
-                          </div>
 
-                          <a
-                            href={app.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={e => e.stopPropagation()}
-                            className="w-full flex items-center justify-between px-3 py-1.5 rounded bg-slate-900 border border-slate-800 hover:bg-coral hover:border-coral hover:text-white text-slate-300 text-[11px] font-bold transition-colors no-underline active:scale-[0.99]"
-                          >
-                            <span className="uppercase tracking-wider">Abrir App</span>
-                            <ExternalLink size={11} />
-                          </a>
+                            {/* Indicator Icon for opening app */}
+                            <div className="p-1.5 rounded-lg text-slate-500 group-hover:text-coral transition-colors">
+                              <ExternalLink size={14} />
+                            </div>
+                          </div>
                         </div>
                       ))}
 
@@ -1115,14 +1111,16 @@ export default function App() {
                       {category.apps.map(app => (
                         <div
                           key={app.id}
-                          className="group flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-coral transition-colors gap-2"
+                          onClick={() => window.open(app.url, '_blank', 'noopener,noreferrer')}
+                          className="group flex items-center justify-between p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-coral hover:bg-slate-900/90 transition-colors gap-2 cursor-pointer"
                         >
-                          <span className="text-xs font-semibold text-slate-100 leading-snug break-words flex-1 min-w-0">
+                          <span className="text-sm font-bold uppercase text-slate-100 group-hover:text-coral leading-snug break-words flex-1 min-w-0">
                             {app.name}
                           </span>
                           <div className="flex items-center gap-1 shrink-0">
                             <button
-                              onClick={() =>
+                              onClick={e => {
+                                e.stopPropagation();
                                 setAppModal({
                                   open: true,
                                   mode: 'edit',
@@ -1130,22 +1128,14 @@ export default function App() {
                                   appId: app.id,
                                   name: app.name,
                                   url: app.url
-                                })
-                              }
+                                });
+                              }}
                               className="p-1 rounded text-slate-500 hover:text-white"
                               title="Editar"
                             >
                               <Edit3 size={11} />
                             </button>
-                            <a
-                              href={app.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-coral text-white text-[10px] font-bold uppercase transition-colors"
-                            >
-                              <span>Ir</span>
-                              <ExternalLink size={9} />
-                            </a>
+                            <ExternalLink size={13} className="text-slate-500 group-hover:text-coral transition-colors" />
                           </div>
                         </div>
                       ))}
@@ -1223,15 +1213,20 @@ export default function App() {
                       {category.apps.map(app => (
                         <div
                           key={app.id}
-                          className="group bg-slate-950 p-3 rounded-xl border border-slate-800 hover:border-coral transition-all flex flex-col justify-between gap-2 shadow-xs"
+                          onClick={() => window.open(app.url, '_blank', 'noopener,noreferrer')}
+                          className="group bg-slate-950 p-3.5 rounded-xl border border-slate-800 hover:border-coral hover:bg-slate-900/80 transition-all flex flex-col justify-between gap-3 shadow-xs cursor-pointer active:scale-[0.99]"
                         >
-                          <h4 className="font-bold text-xs leading-snug text-slate-100 group-hover:text-coral transition-colors break-words">
-                            {app.name}
-                          </h4>
-                          <div className="pt-2 border-t border-slate-850 flex items-center justify-between gap-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-extrabold text-sm uppercase tracking-wide leading-snug text-slate-100 group-hover:text-coral transition-colors break-words">
+                              {app.name}
+                            </h4>
+                            <ExternalLink size={14} className="text-slate-500 group-hover:text-coral shrink-0 mt-0.5" />
+                          </div>
+                          <div className="pt-2 border-t border-slate-850 flex items-center justify-end gap-1">
                             <div className="flex items-center gap-1">
                               <button
-                                onClick={() =>
+                                onClick={e => {
+                                  e.stopPropagation();
                                   setAppModal({
                                     open: true,
                                     mode: 'edit',
@@ -1239,30 +1234,24 @@ export default function App() {
                                     appId: app.id,
                                     name: app.name,
                                     url: app.url
-                                  })
-                                }
+                                  });
+                                }}
                                 className="p-1 rounded text-slate-500 hover:text-white"
                                 title="Editar"
                               >
                                 <Edit3 size={11} />
                               </button>
                               <button
-                                onClick={() => uninstallApp(app.id, app.name)}
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  uninstallApp(app.id, app.name);
+                                }}
                                 className="p-1 rounded text-slate-500 hover:text-coral"
                                 title="Eliminar"
                               >
                                 <Trash2 size={11} />
                               </button>
                             </div>
-                            <a
-                              href={app.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-coral text-white text-[10px] font-bold uppercase transition-colors flex items-center gap-1"
-                            >
-                              <span>Acceder</span>
-                              <ExternalLink size={9} />
-                            </a>
                           </div>
                         </div>
                       ))}
