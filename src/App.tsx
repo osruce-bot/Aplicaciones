@@ -849,16 +849,16 @@ export default function App() {
         </header>
 
         {/* Dashboard Canvas / Content Area */}
-        <div className="flex-1 min-h-0 overflow-hidden relative">
+        <div className="flex-1 min-h-0 overflow-y-auto md:overflow-hidden relative">
           <AnimatePresence mode="wait">
-            {/* VIEW MODE 1: PANORAMIC COLUMNS (All visible across width, internal list scroll per column, ZERO global vertical scroll) */}
+            {/* VIEW MODE 1: PANORAMIC COLUMNS (Horizontal on Desktop, Clean Vertical Flow on Mobile) */}
             {viewMode === 'columns' && (
               <motion.div
                 key="columns-view"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="h-full w-full overflow-x-auto overflow-y-hidden p-3 md:p-4 flex gap-3.5 items-stretch"
+                className="h-full w-full overflow-y-auto md:overflow-y-hidden overflow-x-hidden md:overflow-x-auto p-3 md:p-4 flex flex-col md:flex-row gap-3.5 md:items-stretch"
               >
                 {filteredCategories.map((category, catIndex) => (
                   <section
@@ -866,7 +866,7 @@ export default function App() {
                     onDragOver={e => handleAppDragOverCategory(e, category.name)}
                     onDrop={e => handleAppDropOnCategory(e, category.name)}
                     className={cn(
-                      'flex flex-col flex-1 min-w-[240px] max-w-[340px] bg-slate-900/90 border rounded-xl overflow-hidden shadow-md transition-all duration-200',
+                      'flex flex-col w-full md:flex-1 md:min-w-[240px] md:max-w-[340px] bg-slate-900/90 border rounded-xl overflow-hidden shadow-md transition-all duration-200 shrink-0 md:shrink',
                       dragOverCategory === category.name
                         ? 'border-coral ring-1 ring-coral bg-coral/10'
                         : 'border-slate-800'
@@ -888,7 +888,7 @@ export default function App() {
                         <button
                           onClick={() => moveCategory(catIndex, 'up')}
                           disabled={catIndex === 0}
-                          className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-20"
+                          className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-20 hidden md:block"
                           title="Mover a la izquierda"
                         >
                           <ArrowUp size={11} className="-rotate-90" />
@@ -896,10 +896,27 @@ export default function App() {
                         <button
                           onClick={() => moveCategory(catIndex, 'down')}
                           disabled={catIndex === categories.length - 1}
-                          className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-20"
+                          className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-20 hidden md:block"
                           title="Mover a la derecha"
                         >
                           <ArrowDown size={11} className="-rotate-90" />
+                        </button>
+                        {/* Mobile reorder buttons (up/down) */}
+                        <button
+                          onClick={() => moveCategory(catIndex, 'up')}
+                          disabled={catIndex === 0}
+                          className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-20 md:hidden"
+                          title="Mover arriba"
+                        >
+                          <ArrowUp size={11} />
+                        </button>
+                        <button
+                          onClick={() => moveCategory(catIndex, 'down')}
+                          disabled={catIndex === categories.length - 1}
+                          className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-20 md:hidden"
+                          title="Mover abajo"
+                        >
+                          <ArrowDown size={11} />
                         </button>
                         <button
                           onClick={() =>
@@ -940,8 +957,8 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Apps List Inside Column */}
-                    <div className="flex-1 p-2 space-y-1.5 overflow-y-auto custom-scrollbar">
+                    {/* Apps List Inside Column: Scrollable on Desktop, naturally expanded on Mobile */}
+                    <div className="flex-1 p-2 space-y-1.5 md:overflow-y-auto custom-scrollbar">
                       {category.apps.map(app => (
                         <div
                           key={app.id}
@@ -963,7 +980,7 @@ export default function App() {
                             <div className="flex items-start gap-1.5 flex-1 min-w-0">
                               <GripVertical
                                 size={12}
-                                className="text-slate-600 mt-0.5 shrink-0 group-hover:text-coral transition-colors cursor-grab"
+                                className="text-slate-600 mt-0.5 shrink-0 group-hover:text-coral transition-colors cursor-grab hidden md:block"
                               />
                               {/* Full name without cuts */}
                               <span className="font-semibold text-xs text-slate-100 group-hover:text-coral transition-colors leading-snug break-words">
@@ -971,8 +988,8 @@ export default function App() {
                               </span>
                             </div>
 
-                            {/* Card Menu Actions */}
-                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                            {/* Card Menu Actions - always visible on mobile for easy touch access */}
+                            <div className="flex items-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                               <button
                                 onClick={e => {
                                   e.stopPropagation();
@@ -988,7 +1005,7 @@ export default function App() {
                                 className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800"
                                 title="Mover a otra categoría"
                               >
-                                <FolderOutput size={11} />
+                                <FolderOutput size={12} />
                               </button>
                               <button
                                 onClick={e => {
@@ -1005,7 +1022,7 @@ export default function App() {
                                 className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800"
                                 title="Editar app"
                               >
-                                <Edit3 size={11} />
+                                <Edit3 size={12} />
                               </button>
                               <button
                                 onClick={e => {
@@ -1015,7 +1032,7 @@ export default function App() {
                                 className="p-1 rounded text-slate-400 hover:text-coral hover:bg-coral/20"
                                 title="Eliminar app"
                               >
-                                <Trash2 size={11} />
+                                <Trash2 size={12} />
                               </button>
                             </div>
                           </div>
@@ -1025,10 +1042,10 @@ export default function App() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={e => e.stopPropagation()}
-                            className="w-full flex items-center justify-between px-2.5 py-1 rounded bg-slate-900 border border-slate-800 hover:bg-coral hover:border-coral hover:text-white text-slate-300 text-[10px] font-bold transition-colors no-underline"
+                            className="w-full flex items-center justify-between px-3 py-1.5 rounded bg-slate-900 border border-slate-800 hover:bg-coral hover:border-coral hover:text-white text-slate-300 text-[11px] font-bold transition-colors no-underline active:scale-[0.99]"
                           >
                             <span className="uppercase tracking-wider">Abrir App</span>
-                            <ExternalLink size={10} />
+                            <ExternalLink size={11} />
                           </a>
                         </div>
                       ))}
