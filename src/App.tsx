@@ -22,11 +22,16 @@ import {
   ArrowUp,
   ArrowDown,
   Edit3,
-  FolderOutput
+  FolderOutput,
+  LayoutGrid,
+  List,
+  Columns
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { APP_CATEGORIES, App as AppType, Category as CategoryType } from './constants';
 import { cn } from './lib/utils';
+
+type ViewMode = 'columns' | 'grid' | 'compact';
 
 export default function App() {
   // Initialize categories from localStorage if available, or default
@@ -50,10 +55,19 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // View mode preference stored in localStorage ('columns' is panoramic multi-column without vertical scroll)
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (localStorage.getItem('orc_view_mode') as ViewMode) || 'columns';
+  });
+
+  const handleSetViewMode = (mode: ViewMode) => {
+    setViewMode(mode);
+    localStorage.setItem('orc_view_mode', mode);
+  };
 
   // Authentication state stored in sessionStorage so closing window/tab requires re-login
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    // Clean up any legacy localStorage login key to ensure window close behavior works
     try {
       localStorage.removeItem('orc_app_logged_in');
     } catch {
@@ -374,7 +388,6 @@ export default function App() {
     e.preventDefault();
     if (username.trim() === 'osruce' && password === 'Zafiro641') {
       setIsLoggedIn(true);
-      // Save session in sessionStorage so that closing the tab/window asks for credentials again
       sessionStorage.setItem('orc_app_logged_in', 'true');
       localStorage.removeItem('orc_app_logged_in');
       setLoginError('');
@@ -510,13 +523,13 @@ export default function App() {
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.04
+        staggerChildren: 0.02
       }
     }
   };
 
   const item = {
-    hidden: { y: 15, opacity: 0 },
+    hidden: { y: 8, opacity: 0 },
     show: { y: 0, opacity: 1 }
   };
 
@@ -533,15 +546,15 @@ export default function App() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'w-72 border-r border-slate-800 flex flex-col shrink-0 bg-slate-900 fixed md:static inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out md:translate-x-0 shadow-2xl md:shadow-none',
+          'w-64 border-r border-slate-800 flex flex-col shrink-0 bg-slate-900 fixed md:static inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out md:translate-x-0 shadow-2xl md:shadow-none',
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="p-5 flex flex-col h-full overflow-y-auto">
+        <div className="p-4 flex flex-col h-full overflow-y-auto">
           {/* Sidebar Header */}
-          <div className="flex items-center justify-between mb-6 gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="relative w-9 h-9 shrink-0 transform hover:scale-110 transition-transform duration-300">
+          <div className="flex items-center justify-between mb-4 gap-2">
+            <div className="flex items-center gap-2">
+              <div className="relative w-8 h-8 shrink-0 transform hover:scale-110 transition-transform duration-300">
                 <div className="absolute inset-0 rounded-full border-2 border-slate-700 shadow-sm overflow-hidden flex flex-col">
                   <div className="flex-1 flex">
                     <div className="flex-1 bg-terracotta" />
@@ -553,14 +566,14 @@ export default function App() {
                     <div className="flex-1 bg-slate-950" />
                   </div>
                 </div>
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-coral rotate-45" />
+                <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-coral rotate-45" />
               </div>
-              <h1 className="text-lg font-bold tracking-tight text-white uppercase">APP ORC</h1>
+              <h1 className="text-base font-bold tracking-tight text-white uppercase">APP ORC</h1>
             </div>
 
             <button
               onClick={() => setIsSidebarOpen(false)}
-              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 md:hidden transition-colors"
+              className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 md:hidden transition-colors"
               title="Cerrar menú"
             >
               <X size={18} />
@@ -568,23 +581,23 @@ export default function App() {
           </div>
 
           {/* Quick Categories Filter */}
-          <div className="space-y-1.5 mb-6">
+          <div className="space-y-1 mb-4">
             <button
               onClick={() => {
                 setActiveCategory(null);
                 setIsSidebarOpen(false);
               }}
               className={cn(
-                'w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-between group transform hover:-translate-y-0.5 cursor-pointer',
+                'w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between group cursor-pointer',
                 !activeCategory
                   ? 'bg-coral text-white shadow-md shadow-coral/25 ring-1 ring-coral'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800 border border-transparent'
               )}
             >
               <span>Todas las Apps</span>
               <span
                 className={cn(
-                  'text-[10px] px-2 py-0.5 rounded-full font-bold transition-colors duration-200 border',
+                  'text-[10px] px-1.5 py-0.2 rounded-full font-bold transition-colors duration-200 border',
                   !activeCategory
                     ? 'bg-white text-coral border-white'
                     : 'bg-slate-800 text-slate-300 border-slate-700 group-hover:bg-coral group-hover:text-white group-hover:border-coral'
@@ -596,24 +609,24 @@ export default function App() {
           </div>
 
           {/* Categories Nav Header */}
-          <div className="flex items-center justify-between px-1 mb-2">
-            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+          <div className="flex items-center justify-between px-1 mb-1.5">
+            <span className="text-[9px] font-bold tracking-wider text-slate-400 uppercase">
               Categorías ({categories.length})
             </span>
             <button
               onClick={() =>
                 setCategoryModal({ open: true, mode: 'create', name: '' })
               }
-              className="flex items-center gap-1 text-[10px] font-bold text-coral hover:text-white transition-colors py-0.5 px-2 rounded-lg bg-coral/15 hover:bg-coral border border-coral/30 cursor-pointer"
+              className="flex items-center gap-1 text-[9px] font-bold text-coral hover:text-white transition-colors py-0.5 px-1.5 rounded-lg bg-coral/15 hover:bg-coral border border-coral/30 cursor-pointer"
               title="Crear nueva categoría"
             >
-              <Plus size={12} />
+              <Plus size={10} />
               <span>Nueva</span>
             </button>
           </div>
 
           {/* Categories List with Drag & Drop */}
-          <nav className="space-y-1 overflow-y-auto flex-1 pr-1">
+          <nav className="space-y-0.5 overflow-y-auto flex-1 pr-1 custom-scrollbar">
             {categories.map((cat, catIndex) => (
               <div
                 key={cat.name}
@@ -632,7 +645,7 @@ export default function App() {
                   }
                 }}
                 className={cn(
-                  'group relative rounded-xl border transition-all duration-200 flex items-center justify-between p-1.5',
+                  'group relative rounded-lg border transition-all duration-200 flex items-center justify-between p-1',
                   activeCategory === cat.name
                     ? 'bg-slate-800 border-slate-600 font-bold text-white shadow-xs'
                     : 'border-transparent hover:border-slate-750 hover:bg-slate-800/60 text-slate-300',
@@ -644,10 +657,10 @@ export default function App() {
                     setActiveCategory(activeCategory === cat.name ? null : cat.name);
                     setIsSidebarOpen(false);
                   }}
-                  className="flex items-center gap-2 flex-1 min-w-0 py-1 pl-1 cursor-pointer"
+                  className="flex items-center gap-1.5 flex-1 min-w-0 py-0.5 pl-0.5 cursor-pointer"
                 >
                   <GripVertical
-                    size={13}
+                    size={12}
                     className="text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab shrink-0"
                   />
                   <span
@@ -660,10 +673,10 @@ export default function App() {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-0.5 shrink-0">
                   <span
                     className={cn(
-                      'text-[10px] px-1.5 py-0.5 rounded-full font-bold border',
+                      'text-[9px] px-1.5 py-0.2 rounded-full font-bold border',
                       activeCategory === cat.name
                         ? 'bg-coral text-white border-coral'
                         : 'bg-slate-800 text-slate-400 border-slate-700'
@@ -706,30 +719,30 @@ export default function App() {
           </nav>
 
           {/* Sidebar Footer */}
-          <div className="mt-auto pt-4 space-y-2 border-t border-slate-800 shrink-0">
+          <div className="mt-auto pt-3 space-y-1.5 border-t border-slate-800 shrink-0">
             <button
               onClick={() =>
                 setCategoryModal({ open: true, mode: 'create', name: '' })
               }
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-200 bg-slate-800/80 border border-slate-700 hover:bg-coral hover:text-white hover:border-coral transition-all duration-200 cursor-pointer shadow-xs"
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-200 bg-slate-800/80 border border-slate-700 hover:bg-coral hover:text-white hover:border-coral transition-all duration-200 cursor-pointer shadow-xs"
             >
-              <FolderPlus size={14} />
+              <FolderPlus size={13} />
               <span>Nueva Categoría</span>
             </button>
 
             <button
               onClick={resetApps}
-              className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-coral transition-colors group cursor-pointer"
+              className="w-full flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-coral transition-colors group cursor-pointer"
             >
-              <RotateCcw size={13} className="text-slate-500 group-hover:text-coral transition-colors" />
+              <RotateCcw size={12} className="text-slate-500 group-hover:text-coral transition-colors" />
               <span>Resetear Apps</span>
             </button>
 
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-coral transition-colors group cursor-pointer"
+              className="w-full flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-coral transition-colors group cursor-pointer"
             >
-              <LogOut size={13} className="text-slate-500 group-hover:text-coral transition-colors" />
+              <LogOut size={12} className="text-slate-500 group-hover:text-coral transition-colors" />
               <span>Cerrar Sesión</span>
             </button>
           </div>
@@ -737,31 +750,76 @@ export default function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
-        <header className="px-4 md:px-8 py-3 md:py-4 border-b border-slate-800 flex items-center gap-2 md:gap-4 sticky top-0 bg-slate-900/90 backdrop-blur-md z-10 shadow-sm">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="p-2 -ml-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-coral md:hidden transition-colors cursor-pointer"
-            title="Abrir menú"
-          >
-            <Menu size={20} />
-          </button>
+      <main className="flex-1 flex flex-col min-w-0 bg-slate-950 relative h-full overflow-hidden">
+        <header className="px-4 md:px-6 py-2.5 border-b border-slate-800 flex items-center justify-between gap-2 md:gap-4 shrink-0 bg-slate-900/90 backdrop-blur-md z-10">
+          <div className="flex items-center gap-2 flex-1 max-w-xl">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-coral md:hidden transition-colors cursor-pointer shrink-0"
+              title="Abrir menú"
+            >
+              <Menu size={18} />
+            </button>
 
-          <div className="relative flex-1 max-w-xl">
-            <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
-              size={16}
-            />
-            <input
-              type="text"
-              placeholder="Buscar aplicación por nombre..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950/80 border border-slate-750 focus:border-coral outline-none transition-all text-xs md:text-sm text-slate-100 placeholder:text-slate-500 font-medium"
-            />
+            <div className="relative flex-1">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+                size={14}
+              />
+              <input
+                type="text"
+                placeholder="Buscar aplicación..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-slate-950/80 border border-slate-750 focus:border-coral outline-none transition-all text-xs text-slate-100 placeholder:text-slate-500 font-medium"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 md:gap-3 ml-auto">
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* View Mode Switcher */}
+            <div className="hidden lg:flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+              <button
+                onClick={() => handleSetViewMode('columns')}
+                className={cn(
+                  'flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer',
+                  viewMode === 'columns'
+                    ? 'bg-coral text-white shadow-xs'
+                    : 'text-slate-400 hover:text-slate-200'
+                )}
+                title="Vista Panorámica por Columnas (Sin scroll vertical)"
+              >
+                <Columns size={12} />
+                <span>Columnas</span>
+              </button>
+              <button
+                onClick={() => handleSetViewMode('compact')}
+                className={cn(
+                  'flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer',
+                  viewMode === 'compact'
+                    ? 'bg-coral text-white shadow-xs'
+                    : 'text-slate-400 hover:text-slate-200'
+                )}
+                title="Vista Compacta Total"
+              >
+                <List size={12} />
+                <span>Compacto</span>
+              </button>
+              <button
+                onClick={() => handleSetViewMode('grid')}
+                className={cn(
+                  'flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer',
+                  viewMode === 'grid'
+                    ? 'bg-coral text-white shadow-xs'
+                    : 'text-slate-400 hover:text-slate-200'
+                )}
+                title="Vista Cuadrícula de Tarjetas"
+              >
+                <LayoutGrid size={12} />
+                <span>Tarjetas</span>
+              </button>
+            </div>
+
             {/* Quick Add App Button in Header */}
             <button
               onClick={() =>
@@ -773,77 +831,252 @@ export default function App() {
                   url: ''
                 })
               }
-              className="hidden sm:flex items-center gap-1.5 py-2 px-3.5 rounded-xl bg-coral hover:bg-terracotta text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-coral/20 transition-all cursor-pointer transform hover:-translate-y-0.5"
+              className="flex items-center gap-1 py-1.5 px-3 rounded-lg bg-coral hover:bg-terracotta text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer transform hover:-translate-y-0.5"
             >
-              <Plus size={14} />
-              <span>Añadir App</span>
+              <Plus size={13} />
+              <span className="hidden sm:inline">Añadir App</span>
             </button>
 
-            <div className="text-right border-l-2 border-coral pl-3 md:pl-4">
-              <h2 className="text-xs md:text-sm font-bold truncate max-w-[120px] sm:max-w-[200px] text-white">
-                Panel Principal
+            <div className="text-right border-l border-coral pl-2.5">
+              <h2 className="text-xs font-bold truncate max-w-[120px] text-white leading-tight">
+                {activeCategory || 'Panel General'}
               </h2>
-              <p className="text-[9px] md:text-[10px] text-coral font-extrabold uppercase tracking-widest truncate">
+              <p className="text-[8px] text-coral font-extrabold uppercase tracking-widest">
                 APP ORC
               </p>
             </div>
           </div>
         </header>
 
-        {/* Dashboard Canvas / Content */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-8 py-5 md:py-6">
+        {/* Dashboard Canvas / Content Area */}
+        <div className="flex-1 min-h-0 overflow-hidden relative">
           <AnimatePresence mode="wait">
-            <motion.div
-              key={activeCategory || 'all'}
-              variants={container}
-              initial="hidden"
-              animate="show"
-              className="space-y-6 md:space-y-8 max-w-7xl mx-auto pb-12"
-            >
-              {filteredCategories.map((category, catIndex) => (
-                <section
-                  key={category.name}
-                  onDragOver={e => handleAppDragOverCategory(e, category.name)}
-                  onDrop={e => handleAppDropOnCategory(e, category.name)}
-                  className={cn(
-                    'transition-all duration-200 rounded-2xl p-2 md:p-3 -m-2 md:-m-3 border',
-                    dragOverCategory === category.name
-                      ? 'border-coral border-dashed bg-coral/10'
-                      : 'border-transparent'
-                  )}
-                >
-                  {/* Category Header Bar */}
-                  <div className="flex items-center justify-between gap-3 mb-3 md:mb-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-2 h-5 bg-coral rounded-full" />
-                      <h3 className="text-xs md:text-sm font-bold uppercase tracking-widest text-white">
-                        {category.name}
-                      </h3>
-                      <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                        {category.apps.length} app(s)
-                      </span>
+            {/* VIEW MODE 1: PANORAMIC COLUMNS (All visible across width, internal list scroll per column, ZERO global vertical scroll) */}
+            {viewMode === 'columns' && (
+              <motion.div
+                key="columns-view"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-full w-full overflow-x-auto overflow-y-hidden p-3 md:p-4 flex gap-3.5 items-stretch"
+              >
+                {filteredCategories.map((category, catIndex) => (
+                  <section
+                    key={category.name}
+                    onDragOver={e => handleAppDragOverCategory(e, category.name)}
+                    onDrop={e => handleAppDropOnCategory(e, category.name)}
+                    className={cn(
+                      'flex flex-col flex-1 min-w-[240px] max-w-[340px] bg-slate-900/90 border rounded-xl overflow-hidden shadow-md transition-all duration-200',
+                      dragOverCategory === category.name
+                        ? 'border-coral ring-1 ring-coral bg-coral/10'
+                        : 'border-slate-800'
+                    )}
+                  >
+                    {/* Category Header */}
+                    <div className="px-3 py-2 bg-slate-950/70 border-b border-slate-800 flex items-center justify-between gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="w-1.5 h-3.5 bg-coral rounded-full shrink-0" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-white truncate" title={category.name}>
+                          {category.name}
+                        </h3>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
+                          {category.apps.length}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button
+                          onClick={() => moveCategory(catIndex, 'up')}
+                          disabled={catIndex === 0}
+                          className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-20"
+                          title="Mover a la izquierda"
+                        >
+                          <ArrowUp size={11} className="-rotate-90" />
+                        </button>
+                        <button
+                          onClick={() => moveCategory(catIndex, 'down')}
+                          disabled={catIndex === categories.length - 1}
+                          className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-20"
+                          title="Mover a la derecha"
+                        >
+                          <ArrowDown size={11} className="-rotate-90" />
+                        </button>
+                        <button
+                          onClick={() =>
+                            setAppModal({
+                              open: true,
+                              mode: 'create',
+                              categoryName: category.name,
+                              name: '',
+                              url: ''
+                            })
+                          }
+                          className="p-1 rounded text-coral hover:bg-coral/20"
+                          title="Añadir App a esta categoría"
+                        >
+                          <Plus size={12} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            setCategoryModal({
+                              open: true,
+                              mode: 'rename',
+                              oldName: category.name,
+                              name: category.name
+                            })
+                          }
+                          className="p-1 rounded text-slate-400 hover:text-white"
+                          title="Renombrar categoría"
+                        >
+                          <Edit3 size={11} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCategory(category.name)}
+                          className="p-1 rounded text-slate-400 hover:text-coral"
+                          title="Eliminar categoría"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
-                      {/* Move category up / down */}
-                      <button
-                        onClick={() => moveCategory(catIndex, 'up')}
-                        disabled={catIndex === 0}
-                        className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                        title="Mover categoría arriba"
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        onClick={() => moveCategory(catIndex, 'down')}
-                        disabled={catIndex === categories.length - 1}
-                        className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                        title="Mover categoría abajo"
-                      >
-                        <ArrowDown size={14} />
-                      </button>
+                    {/* Apps List Inside Column */}
+                    <div className="flex-1 p-2 space-y-1.5 overflow-y-auto custom-scrollbar">
+                      {category.apps.map(app => (
+                        <div
+                          key={app.id}
+                          draggable
+                          onDragStart={e => handleAppDragStart(e, app.id, category.name)}
+                          onDragOver={e => {
+                            e.preventDefault();
+                            setDragOverAppId(app.id);
+                          }}
+                          onDrop={e => handleAppDropOnApp(e, app.id, category.name)}
+                          className={cn(
+                            'group relative bg-slate-950/70 p-2.5 rounded-lg border transition-all duration-150 flex flex-col justify-between gap-2 shadow-xs hover:border-coral/80 hover:bg-slate-950',
+                            dragOverAppId === app.id
+                              ? 'border-coral ring-1 ring-coral bg-coral/10'
+                              : 'border-slate-800/90'
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-1.5">
+                            <div className="flex items-start gap-1.5 flex-1 min-w-0">
+                              <GripVertical
+                                size={12}
+                                className="text-slate-600 mt-0.5 shrink-0 group-hover:text-coral transition-colors cursor-grab"
+                              />
+                              {/* Full name without cuts */}
+                              <span className="font-semibold text-xs text-slate-100 group-hover:text-coral transition-colors leading-snug break-words">
+                                {app.name}
+                              </span>
+                            </div>
 
-                      {/* Add App to this specific category */}
+                            {/* Card Menu Actions */}
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  const firstOtherCat = categories.find(c => c.name !== category.name)?.name || category.name;
+                                  setMoveModal({
+                                    open: true,
+                                    appId: app.id,
+                                    appName: app.name,
+                                    sourceCategory: category.name,
+                                    targetCategory: firstOtherCat
+                                  });
+                                }}
+                                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800"
+                                title="Mover a otra categoría"
+                              >
+                                <FolderOutput size={11} />
+                              </button>
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setAppModal({
+                                    open: true,
+                                    mode: 'edit',
+                                    categoryName: category.name,
+                                    appId: app.id,
+                                    name: app.name,
+                                    url: app.url
+                                  });
+                                }}
+                                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800"
+                                title="Editar app"
+                              >
+                                <Edit3 size={11} />
+                              </button>
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  uninstallApp(app.id, app.name);
+                                }}
+                                className="p-1 rounded text-slate-400 hover:text-coral hover:bg-coral/20"
+                                title="Eliminar app"
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <a
+                            href={app.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="w-full flex items-center justify-between px-2.5 py-1 rounded bg-slate-900 border border-slate-800 hover:bg-coral hover:border-coral hover:text-white text-slate-300 text-[10px] font-bold transition-colors no-underline"
+                          >
+                            <span className="uppercase tracking-wider">Abrir App</span>
+                            <ExternalLink size={10} />
+                          </a>
+                        </div>
+                      ))}
+
+                      {category.apps.length === 0 && (
+                        <div
+                          onClick={() =>
+                            setAppModal({
+                              open: true,
+                              mode: 'create',
+                              categoryName: category.name,
+                              name: '',
+                              url: ''
+                            })
+                          }
+                          className="h-24 border-2 border-dashed border-slate-800 rounded-lg p-2 flex flex-col items-center justify-center text-center text-slate-500 hover:border-coral hover:text-coral transition-colors cursor-pointer text-[10px] font-bold"
+                        >
+                          <Plus size={14} className="mb-1" />
+                          <span>Añadir App aquí</span>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                ))}
+              </motion.div>
+            )}
+
+            {/* VIEW MODE 2: ULTRA-COMPACT LIST (Maximum density, fits everything on screen) */}
+            {viewMode === 'compact' && (
+              <motion.div
+                key="compact-view"
+                variants={container}
+                initial="hidden"
+                animate="show"
+                className="h-full overflow-y-auto p-3 md:p-5 max-w-7xl mx-auto space-y-4"
+              >
+                {filteredCategories.map(category => (
+                  <div key={category.name} className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-3.5 bg-coral rounded-full" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                          {category.name}
+                        </h3>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                          {category.apps.length}
+                        </span>
+                      </div>
                       <button
                         onClick={() =>
                           setAppModal({
@@ -854,99 +1087,25 @@ export default function App() {
                             url: ''
                           })
                         }
-                        className="p-1.5 rounded-lg text-xs font-bold text-coral hover:bg-coral hover:text-white bg-coral/15 transition-colors flex items-center gap-1 cursor-pointer ml-1 border border-coral/30"
-                        title="Añadir App a esta categoría"
+                        className="text-[10px] text-coral hover:underline font-bold flex items-center gap-1 cursor-pointer"
                       >
-                        <Plus size={12} />
-                        <span className="hidden sm:inline text-[10px] uppercase tracking-wider">Añadir App</span>
-                      </button>
-
-                      {/* Rename Category */}
-                      <button
-                        onClick={() =>
-                          setCategoryModal({
-                            open: true,
-                            mode: 'rename',
-                            oldName: category.name,
-                            name: category.name
-                          })
-                        }
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                        title="Renombrar categoría"
-                      >
-                        <Edit3 size={13} />
-                      </button>
-
-                      {/* Delete Category */}
-                      <button
-                        onClick={() => handleDeleteCategory(category.name)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-coral hover:bg-coral/20 transition-colors"
-                        title="Eliminar categoría"
-                      >
-                        <Trash2 size={13} />
+                        <Plus size={11} />
+                        <span>Añadir</span>
                       </button>
                     </div>
-                  </div>
 
-                  <div className="h-[1px] w-full bg-slate-800 mb-3.5" />
-
-                  {/* App Cards Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4">
-                    {category.apps.map(app => (
-                      <motion.div
-                        key={app.id}
-                        variants={item}
-                        draggable
-                        onDragStart={e => handleAppDragStart(e, app.id, category.name)}
-                        onDragOver={e => {
-                          e.preventDefault();
-                          setDragOverAppId(app.id);
-                        }}
-                        onDrop={e => handleAppDropOnApp(e, app.id, category.name)}
-                        className={cn(
-                          'group relative bg-slate-900 p-3.5 rounded-xl border transition-all duration-300 ease-out flex flex-col justify-between min-h-[125px] shadow-sm transform hover:-translate-y-1.5 cursor-grab active:cursor-grabbing',
-                          dragOverAppId === app.id
-                            ? 'border-coral ring-2 ring-coral/40 shadow-lg bg-coral/10'
-                            : 'border-slate-800 hover:border-coral hover:shadow-xl hover:shadow-coral/10'
-                        )}
-                      >
-                        {/* Drag indicator & App Header */}
-                        <div className="flex justify-between items-start gap-1.5 mb-2.5">
-                          <div className="flex items-start gap-1.5 flex-1 min-w-0">
-                            <GripVertical
-                              size={14}
-                              className="text-slate-500 mt-0.5 shrink-0 group-hover:text-coral transition-colors"
-                            />
-                            <h4 className="font-bold text-xs md:text-sm leading-snug text-slate-100 group-hover:text-coral transition-colors break-words min-w-0">
-                              {app.name}
-                            </h4>
-                          </div>
-
-                          {/* Actions on Card */}
-                          <div className="flex items-center gap-0.5 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                            {/* Move App */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {category.apps.map(app => (
+                        <div
+                          key={app.id}
+                          className="group flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-coral transition-colors gap-2"
+                        >
+                          <span className="text-xs font-semibold text-slate-100 leading-snug break-words flex-1 min-w-0">
+                            {app.name}
+                          </span>
+                          <div className="flex items-center gap-1 shrink-0">
                             <button
-                              onClick={e => {
-                                e.stopPropagation();
-                                const firstOtherCat = categories.find(c => c.name !== category.name)?.name || category.name;
-                                setMoveModal({
-                                  open: true,
-                                  appId: app.id,
-                                  appName: app.name,
-                                  sourceCategory: category.name,
-                                  targetCategory: firstOtherCat
-                                });
-                              }}
-                              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                              title="Mover a otra categoría"
-                            >
-                              <FolderOutput size={12} />
-                            </button>
-
-                            {/* Edit App */}
-                            <button
-                              onClick={e => {
-                                e.stopPropagation();
+                              onClick={() =>
                                 setAppModal({
                                   open: true,
                                   mode: 'edit',
@@ -954,87 +1113,168 @@ export default function App() {
                                   appId: app.id,
                                   name: app.name,
                                   url: app.url
-                                });
-                              }}
-                              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                              title="Editar app"
+                                })
+                              }
+                              className="p-1 rounded text-slate-500 hover:text-white"
+                              title="Editar"
                             >
-                              <Edit3 size={12} />
+                              <Edit3 size={11} />
                             </button>
-
-                            {/* Delete App */}
-                            <button
-                              onClick={e => {
-                                e.stopPropagation();
-                                uninstallApp(app.id, app.name);
-                              }}
-                              className="p-1 rounded-md text-slate-400 hover:text-coral hover:bg-coral/20 transition-colors"
-                              title="Eliminar app"
+                            <a
+                              href={app.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-coral text-white text-[10px] font-bold uppercase transition-colors"
                             >
-                              <Trash2 size={12} />
-                            </button>
+                              <span>Ir</span>
+                              <ExternalLink size={9} />
+                            </a>
                           </div>
                         </div>
-
-                        {/* Access Button */}
-                        <div className="mt-auto pt-2 border-t border-slate-800/80">
-                          <a
-                            href={app.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={e => e.stopPropagation()}
-                            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-slate-800/90 text-slate-200 border border-slate-700 text-xs font-bold group-hover:bg-coral group-hover:border-coral group-hover:text-white transition-all duration-300 shadow-sm hover:shadow-md no-underline"
-                          >
-                            <span className="uppercase tracking-wider">Acceder</span>
-                            <ExternalLink size={12} />
-                          </a>
-                        </div>
-                      </motion.div>
-                    ))}
-
-                    {/* Empty Category placeholder */}
-                    {category.apps.length === 0 && (
-                      <div
-                        onClick={() =>
-                          setAppModal({
-                            open: true,
-                            mode: 'create',
-                            categoryName: category.name,
-                            name: '',
-                            url: ''
-                          })
-                        }
-                        className="col-span-full border-2 border-dashed border-slate-800 rounded-xl p-4 text-center text-slate-500 hover:border-coral hover:text-coral transition-colors cursor-pointer flex items-center justify-center gap-2 text-xs font-bold"
-                      >
-                        <Plus size={14} />
-                        <span>Categoría vacía. Arrastra una app aquí o haz clic para añadir una app.</span>
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </section>
-              ))}
+                ))}
+              </motion.div>
+            )}
 
-              {filteredCategories.length === 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex flex-col items-center justify-center h-64 text-slate-500 space-y-4"
-                >
-                  <div className="p-6 rounded-full bg-slate-900 border border-slate-800">
-                    <Search size={48} strokeWidth={1} className="text-slate-500" />
-                  </div>
-                  <p className="text-xs font-bold tracking-tight uppercase text-coral">
-                    No se encontraron aplicaciones o categorías
-                  </p>
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold hover:bg-coral hover:text-white transition-colors cursor-pointer border border-slate-700"
+            {/* VIEW MODE 3: STANDARD GRID OF EXPANDED CARDS */}
+            {viewMode === 'grid' && (
+              <motion.div
+                key="grid-view"
+                variants={container}
+                initial="hidden"
+                animate="show"
+                className="h-full overflow-y-auto p-4 md:p-6 max-w-7xl mx-auto space-y-6"
+              >
+                {filteredCategories.map((category, catIndex) => (
+                  <section
+                    key={category.name}
+                    onDragOver={e => handleAppDragOverCategory(e, category.name)}
+                    onDrop={e => handleAppDropOnCategory(e, category.name)}
+                    className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3.5"
                   >
-                    Limpiar búsqueda
-                  </button>
-                </motion.div>
-              )}
-            </motion.div>
+                    {/* Header */}
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-4 bg-coral rounded-full" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                          {category.name}
+                        </h3>
+                        <span className="text-[10px] px-2 py-0.2 rounded-full font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                          {category.apps.length} app(s)
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => moveCategory(catIndex, 'up')}
+                          disabled={catIndex === 0}
+                          className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-20"
+                          title="Mover arriba"
+                        >
+                          <ArrowUp size={13} />
+                        </button>
+                        <button
+                          onClick={() => moveCategory(catIndex, 'down')}
+                          disabled={catIndex === categories.length - 1}
+                          className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-20"
+                          title="Mover abajo"
+                        >
+                          <ArrowDown size={13} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            setAppModal({
+                              open: true,
+                              mode: 'create',
+                              categoryName: category.name,
+                              name: '',
+                              url: ''
+                            })
+                          }
+                          className="p-1.5 rounded-lg text-xs font-bold text-coral hover:bg-coral hover:text-white bg-coral/15 transition-colors flex items-center gap-1"
+                        >
+                          <Plus size={11} />
+                          <span>Añadir</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                      {category.apps.map(app => (
+                        <div
+                          key={app.id}
+                          className="group bg-slate-950 p-3 rounded-xl border border-slate-800 hover:border-coral transition-all flex flex-col justify-between gap-2 shadow-xs"
+                        >
+                          <h4 className="font-bold text-xs leading-snug text-slate-100 group-hover:text-coral transition-colors break-words">
+                            {app.name}
+                          </h4>
+                          <div className="pt-2 border-t border-slate-850 flex items-center justify-between gap-1">
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() =>
+                                  setAppModal({
+                                    open: true,
+                                    mode: 'edit',
+                                    categoryName: category.name,
+                                    appId: app.id,
+                                    name: app.name,
+                                    url: app.url
+                                  })
+                                }
+                                className="p-1 rounded text-slate-500 hover:text-white"
+                                title="Editar"
+                              >
+                                <Edit3 size={11} />
+                              </button>
+                              <button
+                                onClick={() => uninstallApp(app.id, app.name)}
+                                className="p-1 rounded text-slate-500 hover:text-coral"
+                                title="Eliminar"
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                            <a
+                              href={app.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-coral text-white text-[10px] font-bold uppercase transition-colors flex items-center gap-1"
+                            >
+                              <span>Acceder</span>
+                              <ExternalLink size={9} />
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </motion.div>
+            )}
+
+            {filteredCategories.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center h-64 text-slate-500 space-y-4"
+              >
+                <div className="p-4 rounded-full bg-slate-900 border border-slate-800">
+                  <Search size={36} strokeWidth={1} className="text-slate-500" />
+                </div>
+                <p className="text-xs font-bold uppercase text-coral">
+                  No se encontraron aplicaciones
+                </p>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-xs font-bold hover:bg-coral hover:text-white transition-colors cursor-pointer"
+                >
+                  Limpiar búsqueda
+                </button>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
       </main>
@@ -1054,11 +1294,11 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-4 z-10 ring-1 ring-slate-800 text-slate-100"
+              className="relative w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-2xl space-y-4 z-10 ring-1 ring-slate-800 text-slate-100"
             >
               <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                 <div className="flex items-center gap-2 text-white font-bold text-sm uppercase tracking-wider">
-                  <FolderPlus size={18} className="text-coral" />
+                  <FolderPlus size={16} className="text-coral" />
                   <span>
                     {categoryModal.mode === 'create'
                       ? 'Nueva Categoría'
@@ -1082,28 +1322,28 @@ export default function App() {
                     type="text"
                     required
                     autoFocus
-                    placeholder="Ej: Proyectos Específicos..."
+                    placeholder="Ej: Proyectos..."
                     value={categoryModal.name}
                     onChange={e =>
                       setCategoryModal({ ...categoryModal, name: e.target.value })
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-750 focus:border-coral outline-none transition-all text-sm text-slate-100 placeholder:text-slate-500 ring-1 ring-slate-800"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-750 focus:border-coral outline-none transition-all text-sm text-slate-100 placeholder:text-slate-500 ring-1 ring-slate-800"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2">
+                <div className="flex items-center justify-end gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() =>
                       setCategoryModal({ open: false, mode: 'create', name: '' })
                     }
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider border border-slate-700 transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider border border-slate-700 transition-colors cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl bg-coral hover:bg-terracotta text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-coral hover:bg-terracotta text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-colors cursor-pointer"
                   >
                     Guardar
                   </button>
@@ -1131,11 +1371,11 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-md bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-4 z-10 ring-1 ring-slate-800 text-slate-100"
+              className="relative w-full max-w-md bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-2xl space-y-4 z-10 ring-1 ring-slate-800 text-slate-100"
             >
               <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                 <div className="flex items-center gap-2 text-white font-bold text-sm uppercase tracking-wider">
-                  <Plus size={18} className="text-coral" />
+                  <Plus size={16} className="text-coral" />
                   <span>
                     {appModal.mode === 'create' ? 'Añadir Nueva App' : 'Editar App'}
                   </span>
@@ -1150,10 +1390,10 @@ export default function App() {
                 </button>
               </div>
 
-              <form onSubmit={handleSaveApp} className="space-y-4 pt-1">
+              <form onSubmit={handleSaveApp} className="space-y-3.5 pt-1">
                 {appModal.mode === 'create' && (
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                       Categoría
                     </label>
                     <select
@@ -1161,7 +1401,7 @@ export default function App() {
                       onChange={e =>
                         setAppModal({ ...appModal, categoryName: e.target.value })
                       }
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-750 focus:border-coral outline-none transition-all text-xs font-bold text-slate-100 ring-1 ring-slate-800"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-750 focus:border-coral outline-none transition-all text-xs font-bold text-slate-100 ring-1 ring-slate-800"
                     >
                       {categories.map(c => (
                         <option key={c.name} value={c.name} className="bg-slate-900 text-slate-100">
@@ -1173,22 +1413,22 @@ export default function App() {
                 )}
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                    Nombre de la Aplicación
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                    Nombre Completo de la Aplicación
                   </label>
                   <input
                     type="text"
                     required
                     autoFocus
-                    placeholder="Ej: Generador de Contratos..."
+                    placeholder="Ej: Checklist Documentos Para Alquiler o Venta"
                     value={appModal.name}
                     onChange={e => setAppModal({ ...appModal, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-750 focus:border-coral outline-none transition-all text-sm text-slate-100 placeholder:text-slate-500 ring-1 ring-slate-800"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-750 focus:border-coral outline-none transition-all text-xs text-slate-100 placeholder:text-slate-500 ring-1 ring-slate-800 font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                     URL / Enlace de la App
                   </label>
                   <input
@@ -1197,7 +1437,7 @@ export default function App() {
                     placeholder="https://aistudio.google.com/..."
                     value={appModal.url}
                     onChange={e => setAppModal({ ...appModal, url: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-750 focus:border-coral outline-none transition-all text-sm text-slate-100 placeholder:text-slate-500 ring-1 ring-slate-800"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-750 focus:border-coral outline-none transition-all text-xs text-slate-100 placeholder:text-slate-500 ring-1 ring-slate-800 font-mono"
                   />
                 </div>
 
@@ -1207,13 +1447,13 @@ export default function App() {
                     onClick={() =>
                       setAppModal({ open: false, mode: 'create', categoryName: '', name: '', url: '' })
                     }
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider border border-slate-700 transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider border border-slate-700 transition-colors cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl bg-coral hover:bg-terracotta text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-coral hover:bg-terracotta text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-colors cursor-pointer"
                   >
                     Guardar
                   </button>
@@ -1239,11 +1479,11 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-4 z-10 ring-1 ring-slate-800 text-slate-100"
+              className="relative w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-2xl space-y-4 z-10 ring-1 ring-slate-800 text-slate-100"
             >
               <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                 <div className="flex items-center gap-2 text-white font-bold text-sm uppercase tracking-wider">
-                  <FolderOutput size={18} className="text-coral" />
+                  <FolderOutput size={16} className="text-coral" />
                   <span>Mover Aplicación</span>
                 </div>
                 <button
@@ -1254,19 +1494,19 @@ export default function App() {
                 </button>
               </div>
 
-              <form onSubmit={handleMoveAppToCategory} className="space-y-4 pt-1">
+              <form onSubmit={handleMoveAppToCategory} className="space-y-3 pt-1">
                 <p className="text-xs text-slate-300">
                   Mover <strong className="text-white font-bold">{moveModal.appName}</strong> a:
                 </p>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                     Categoría Destino
                   </label>
                   <select
                     value={moveModal.targetCategory}
                     onChange={e => setMoveModal({ ...moveModal, targetCategory: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-750 focus:border-coral outline-none transition-all text-xs font-bold text-slate-100 ring-1 ring-slate-800"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-750 focus:border-coral outline-none transition-all text-xs font-bold text-slate-100 ring-1 ring-slate-800"
                   >
                     {categories.map(c => (
                       <option key={c.name} value={c.name} className="bg-slate-900 text-slate-100">
@@ -1280,13 +1520,13 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setMoveModal({ open: false, appId: '', appName: '', sourceCategory: '', targetCategory: '' })}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider border border-slate-700 transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider border border-slate-700 transition-colors cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl bg-coral hover:bg-terracotta text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-coral hover:bg-terracotta text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-colors cursor-pointer"
                   >
                     Mover
                   </button>
@@ -1312,11 +1552,11 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-4 z-10 ring-1 ring-slate-800 text-slate-100"
+              className="relative w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-2xl space-y-4 z-10 ring-1 ring-slate-800 text-slate-100"
             >
-              <div className="flex items-start gap-3.5">
-                <div className="p-2.5 bg-coral/15 text-coral rounded-xl shrink-0 border border-coral/30">
-                  <Lock size={18} />
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-coral/15 text-coral rounded-xl shrink-0 border border-coral/30">
+                  <Lock size={16} />
                 </div>
                 <div className="space-y-1 flex-1 min-w-0">
                   <h3 className="text-sm font-bold text-white uppercase tracking-wide">
@@ -1331,13 +1571,13 @@ export default function App() {
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   onClick={() => setConfirmDialog(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider border border-slate-700 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider border border-slate-700 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={confirmDialog.onConfirm}
-                  className="px-4 py-2 rounded-xl bg-coral hover:bg-terracotta text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl bg-coral hover:bg-terracotta text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-colors cursor-pointer"
                 >
                   Confirmar
                 </button>
