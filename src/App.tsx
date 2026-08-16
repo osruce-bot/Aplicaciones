@@ -891,7 +891,7 @@ export default function App() {
                   <div className="h-[1px] w-full bg-slate-800 mb-3.5" />
 
                   {/* App Cards Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-7 gap-2.5 md:gap-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4">
                     {category.apps.map(app => (
                       <motion.div
                         key={app.id}
@@ -904,20 +904,20 @@ export default function App() {
                         }}
                         onDrop={e => handleAppDropOnApp(e, app.id, category.name)}
                         className={cn(
-                          'group relative bg-slate-900 p-3 rounded-xl border transition-all duration-300 ease-out flex flex-col justify-between h-[110px] md:h-[115px] shadow-sm transform hover:-translate-y-1.5 cursor-grab active:cursor-grabbing',
+                          'group relative bg-slate-900 p-3.5 rounded-xl border transition-all duration-300 ease-out flex flex-col justify-between min-h-[125px] shadow-sm transform hover:-translate-y-1.5 cursor-grab active:cursor-grabbing',
                           dragOverAppId === app.id
                             ? 'border-coral ring-2 ring-coral/40 shadow-lg bg-coral/10'
                             : 'border-slate-800 hover:border-coral hover:shadow-xl hover:shadow-coral/10'
                         )}
                       >
                         {/* Drag indicator & App Header */}
-                        <div className="flex justify-between items-start gap-1">
-                          <div className="flex items-start gap-1 flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-1.5 mb-2.5">
+                          <div className="flex items-start gap-1.5 flex-1 min-w-0">
                             <GripVertical
-                              size={12}
+                              size={14}
                               className="text-slate-500 mt-0.5 shrink-0 group-hover:text-coral transition-colors"
                             />
-                            <h4 className="font-bold text-[11px] md:text-[12px] leading-tight text-slate-100 group-hover:text-coral transition-colors line-clamp-2 min-w-0">
+                            <h4 className="font-bold text-xs md:text-sm leading-snug text-slate-100 group-hover:text-coral transition-colors break-words min-w-0">
                               {app.name}
                             </h4>
                           </div>
@@ -940,7 +940,7 @@ export default function App() {
                               className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                               title="Mover a otra categoría"
                             >
-                              <FolderOutput size={11} />
+                              <FolderOutput size={12} />
                             </button>
 
                             {/* Edit App */}
@@ -959,7 +959,7 @@ export default function App() {
                               className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                               title="Editar app"
                             >
-                              <Edit3 size={11} />
+                              <Edit3 size={12} />
                             </button>
 
                             {/* Delete App */}
@@ -971,22 +971,22 @@ export default function App() {
                               className="p-1 rounded-md text-slate-400 hover:text-coral hover:bg-coral/20 transition-colors"
                               title="Eliminar app"
                             >
-                              <Trash2 size={11} />
+                              <Trash2 size={12} />
                             </button>
                           </div>
                         </div>
 
                         {/* Access Button */}
-                        <div className="mt-auto">
+                        <div className="mt-auto pt-2 border-t border-slate-800/80">
                           <a
                             href={app.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={e => e.stopPropagation()}
-                            className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-slate-800/90 text-slate-200 border border-slate-700 text-[10px] font-bold group-hover:bg-coral group-hover:border-coral group-hover:text-white transition-all duration-300 shadow-sm hover:shadow-md no-underline"
+                            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-slate-800/90 text-slate-200 border border-slate-700 text-xs font-bold group-hover:bg-coral group-hover:border-coral group-hover:text-white transition-all duration-300 shadow-sm hover:shadow-md no-underline"
                           >
                             <span className="uppercase tracking-wider">Acceder</span>
-                            <ExternalLink size={10} />
+                            <ExternalLink size={12} />
                           </a>
                         </div>
                       </motion.div>
