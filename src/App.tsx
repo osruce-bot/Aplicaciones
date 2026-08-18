@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef, FormEvent, DragEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent, DragEvent, ChangeEvent } from 'react';
 import {
   Search,
   Trash2,
@@ -25,7 +25,17 @@ import {
   FolderOutput,
   LayoutGrid,
   List,
-  Columns
+  Columns,
+  Share2,
+  Copy,
+  Check,
+  Download,
+  Upload,
+  Smartphone,
+  Laptop,
+  CheckCircle2,
+  AlertCircle,
+  FileJson
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { APP_CATEGORIES, App as AppType, Category as CategoryType } from './constants';
@@ -121,6 +131,23 @@ export default function App() {
     sourceCategory: string;
     targetCategory: string;
   }>({ open: false, appId: '', appName: '', sourceCategory: '', targetCategory: '' });
+
+  // Sync / Export / Import Modal state
+  const [syncModal, setSyncModal] = useState<{
+    open: boolean;
+    tab: 'export' | 'import';
+    importText: string;
+    copied: boolean;
+    errorMsg: string;
+    successMsg: string;
+  }>({
+    open: false,
+    tab: 'export',
+    importText: '',
+    copied: false,
+    errorMsg: '',
+    successMsg: ''
+  });
 
   // Filtered Categories based on search query and active category selection
   const filteredCategories = categories
@@ -408,6 +435,87 @@ export default function App() {
         setConfirmDialog(null);
       }
     });
+  };
+
+  // Sync / Export / Import Handlers
+  const getExportJSON = () => {
+    return JSON.stringify(categories, null, 2);
+  };
+
+  const handleCopyConfig = async () => {
+    try {
+      await navigator.clipboard.writeText(getExportJSON());
+      setSyncModal(prev => ({
+        ...prev,
+        copied: true,
+        successMsg: '¡Código copiado al portapapeles! Pégalo en tu otro dispositivo.',
+        errorMsg: ''
+      }));
+      setTimeout(() => {
+        setSyncModal(prev => ({ ...prev, copied: false, successMsg: '' }));
+      }, 3500);
+    } catch {
+      setSyncModal(prev => ({
+        ...prev,
+        errorMsg: 'No se pudo copiar automáticamente. Por favor selecciona el texto del recuadro y cópialo manualmente.'
+      }));
+    }
+  };
+
+  const handleDownloadConfigFile = () => {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(getExportJSON());
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `app-orc-backup-${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleApplyImport = (jsonStr: string) => {
+    if (!jsonStr.trim()) {
+      setSyncModal(prev => ({ ...prev, errorMsg: 'Por favor pega el código de configuración antes de importar.' }));
+      return;
+    }
+    try {
+      const parsed = JSON.parse(jsonStr.trim());
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        throw new Error('El formato debe ser una lista válida de categorías.');
+      }
+      for (const cat of parsed) {
+        if (!cat.name || !Array.isArray(cat.apps)) {
+          throw new Error('Estructura de categoría o apps no válida.');
+        }
+      }
+      setCategories(parsed);
+      setSyncModal(prev => ({
+        ...prev,
+        errorMsg: '',
+        successMsg: '¡Configuración y orden aplicados con éxito en este dispositivo!'
+      }));
+      setTimeout(() => {
+        setSyncModal(prev => ({ ...prev, open: false, successMsg: '', importText: '' }));
+      }, 1800);
+    } catch (err: any) {
+      setSyncModal(prev => ({
+        ...prev,
+        errorMsg: `Error al importar: ${err.message || 'Código JSON inválido'}. Verifica el texto copiado.`
+      }));
+    }
+  };
+
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = event => {
+      const text = event.target?.result as string;
+      if (text) {
+        setSyncModal(prev => ({ ...prev, importText: text }));
+        handleApplyImport(text);
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleLogin = (e: FormEvent) => {
@@ -757,6 +865,23 @@ export default function App() {
             </button>
 
             <button
+              onClick={() =>
+                setSyncModal({
+                  open: true,
+                  tab: 'export',
+                  importText: '',
+                  copied: false,
+                  errorMsg: '',
+                  successMsg: ''
+                })
+              }
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-100 bg-slate-800/90 border border-slate-700 hover:bg-slate-750 hover:border-coral/60 transition-all duration-200 cursor-pointer shadow-xs group"
+            >
+              <Share2 size={13} className="text-coral group-hover:scale-110 transition-transform" />
+              <span>Sincronizar Dispositivos</span>
+            </button>
+
+            <button
               onClick={resetApps}
               className="w-full flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-coral transition-colors group cursor-pointer"
             >
@@ -845,6 +970,25 @@ export default function App() {
                 <span>Tarjetas</span>
               </button>
             </div>
+
+            {/* Sync Button in Header */}
+            <button
+              onClick={() =>
+                setSyncModal({
+                  open: true,
+                  tab: 'export',
+                  importText: '',
+                  copied: false,
+                  errorMsg: '',
+                  successMsg: ''
+                })
+              }
+              className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-slate-850 hover:bg-slate-800 border border-slate-750 text-slate-200 hover:text-white text-xs font-bold transition-colors cursor-pointer"
+              title="Sincronizar orden entre laptop y celular"
+            >
+              <Share2 size={12} className="text-coral" />
+              <span className="hidden sm:inline">Sincronizar</span>
+            </button>
 
             {/* Quick Add App Button in Header */}
             <button
@@ -1604,6 +1748,269 @@ export default function App() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Sync / Export / Import Modal */}
+      <AnimatePresence>
+        {syncModal.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSyncModal(prev => ({ ...prev, open: false, errorMsg: '', successMsg: '' }))}
+              className="absolute inset-0 bg-black/80 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative w-full max-w-lg bg-slate-900 rounded-2xl border border-slate-800 p-4 md:p-6 shadow-2xl space-y-4 z-10 ring-1 ring-slate-800 text-slate-100 max-h-[90vh] flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-coral/15 text-coral border border-coral/30">
+                    <Share2 size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-white uppercase tracking-wider">
+                      Sincronizar Dispositivos
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Copia el orden exacto entre tu laptop y tu celular
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSyncModal(prev => ({ ...prev, open: false, errorMsg: '', successMsg: '' }))}
+                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Tabs Switcher */}
+              <div className="grid grid-cols-2 gap-1 p-1 bg-slate-950/80 rounded-xl border border-slate-800 shrink-0">
+                <button
+                  onClick={() => setSyncModal(prev => ({ ...prev, tab: 'export', errorMsg: '', successMsg: '' }))}
+                  className={cn(
+                    'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                    syncModal.tab === 'export'
+                      ? 'bg-coral text-white shadow-md shadow-coral/20'
+                      : 'text-slate-400 hover:text-slate-200'
+                  )}
+                >
+                  <Laptop size={14} />
+                  <span>1. Exportar (Laptop)</span>
+                </button>
+                <button
+                  onClick={() => setSyncModal(prev => ({ ...prev, tab: 'import', errorMsg: '', successMsg: '' }))}
+                  className={cn(
+                    'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                    syncModal.tab === 'import'
+                      ? 'bg-coral text-white shadow-md shadow-coral/20'
+                      : 'text-slate-400 hover:text-slate-200'
+                  )}
+                >
+                  <Smartphone size={14} />
+                  <span>2. Importar (Celular)</span>
+                </button>
+              </div>
+
+              {/* Success / Error Alerts */}
+              {syncModal.successMsg && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center gap-2 shrink-0"
+                >
+                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+                  <span>{syncModal.successMsg}</span>
+                </motion.div>
+              )}
+
+              {syncModal.errorMsg && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 text-xs font-semibold flex items-center gap-2 shrink-0"
+                >
+                  <AlertCircle size={16} className="text-red-400 shrink-0" />
+                  <span>{syncModal.errorMsg}</span>
+                </motion.div>
+              )}
+
+              {/* Tab Content */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
+                {syncModal.tab === 'export' ? (
+                  <div className="space-y-4">
+                    {/* Device Flow Graphic */}
+                    <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 rounded-lg bg-slate-900 border border-slate-750 text-coral">
+                          <Laptop size={18} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-200">Laptop / Origen</p>
+                          <p className="text-[10px] text-slate-400">
+                            {categories.length} categorías • {categories.reduce((a, c) => a + c.apps.length, 0)} apps
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-coral">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider hidden sm:inline">➔</span>
+                        <Share2 size={14} />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 rounded-lg bg-slate-900 border border-slate-750 text-coral">
+                          <Smartphone size={18} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-200">Celular / Destino</p>
+                          <p className="text-[10px] text-slate-400">Listo para recibir</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Step-by-Step Instructions */}
+                    <div className="p-3 rounded-xl bg-slate-850/60 border border-slate-750/70 space-y-1.5 text-xs text-slate-300">
+                      <p className="font-bold text-white uppercase text-[10px] tracking-wider">
+                        Pasos para sincronizar:
+                      </p>
+                      <ol className="list-decimal list-inside space-y-1 text-[11px] leading-relaxed text-slate-300">
+                        <li>
+                          Haz clic en <strong className="text-coral">"Copiar Código"</strong> abajo.
+                        </li>
+                        <li>
+                          Abre la app en tu celular y entra en <strong className="text-slate-100">"Sincronizar Dispositivos"</strong>.
+                        </li>
+                        <li>
+                          Selecciona la pestaña <strong className="text-coral">"2. Importar"</strong>, pega el código y pulsa <strong className="text-slate-100">"Aplicar"</strong>.
+                        </li>
+                      </ol>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                      <button
+                        onClick={handleCopyConfig}
+                        className={cn(
+                          'w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md',
+                          syncModal.copied
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-coral hover:bg-terracotta text-white shadow-coral/25'
+                        )}
+                      >
+                        {syncModal.copied ? <Check size={16} /> : <Copy size={16} />}
+                        <span>{syncModal.copied ? '¡Código Copiado!' : 'Copiar Código'}</span>
+                      </button>
+
+                      <button
+                        onClick={handleDownloadConfigFile}
+                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 hover:text-white font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                      >
+                        <Download size={15} className="text-coral" />
+                        <span>Descargar Archivo JSON</span>
+                      </button>
+                    </div>
+
+                    {/* Readonly JSON preview */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          Vista previa del código exportado:
+                        </label>
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          JSON • {new TextEncoder().encode(getExportJSON()).length} bytes
+                        </span>
+                      </div>
+                      <textarea
+                        readOnly
+                        value={getExportJSON()}
+                        onFocus={e => e.target.select()}
+                        rows={5}
+                        className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-400 select-all focus:border-coral outline-none resize-none leading-tight"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="p-3 rounded-xl bg-slate-850/60 border border-slate-750/70 text-xs text-slate-300 space-y-1">
+                      <p className="font-bold text-white uppercase text-[10px] tracking-wider">
+                        Pegar configuración en este dispositivo:
+                      </p>
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        Pega el código generado desde tu laptop o carga el archivo JSON descargado. Al aplicar, este dispositivo adoptará exactamente las mismas categorías y orden de apps.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Código de Configuración (JSON)
+                      </label>
+                      <textarea
+                        placeholder='Pega aquí el código que copiaste de tu laptop...'
+                        value={syncModal.importText}
+                        onChange={e => setSyncModal(prev => ({ ...prev, importText: e.target.value, errorMsg: '' }))}
+                        rows={7}
+                        className="w-full p-3 rounded-xl bg-slate-950 border border-slate-750 focus:border-coral outline-none transition-all text-xs font-mono text-slate-100 placeholder:text-slate-600 resize-none ring-1 ring-slate-800"
+                      />
+                    </div>
+
+                    {/* File Uploader Alternative */}
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950/70 border border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <FileJson size={16} className="text-coral shrink-0" />
+                        <span className="text-xs text-slate-300 font-medium">
+                          ¿Tienes el archivo descargado?
+                        </span>
+                      </div>
+                      <label className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] uppercase tracking-wider border border-slate-700 transition-colors cursor-pointer flex items-center gap-1.5">
+                        <Upload size={12} className="text-coral" />
+                        <span>Subir Archivo</span>
+                        <input
+                          type="file"
+                          accept=".json,application/json"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    {/* Apply Button */}
+                    <button
+                      onClick={() => handleApplyImport(syncModal.importText)}
+                      disabled={!syncModal.importText.trim()}
+                      className={cn(
+                        'w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-2',
+                        syncModal.importText.trim()
+                          ? 'bg-coral hover:bg-terracotta text-white shadow-coral/25 transform active:scale-[0.99]'
+                          : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-750'
+                      )}
+                    >
+                      <CheckCircle2 size={16} />
+                      <span>Aplicar en este dispositivo</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="pt-2 border-t border-slate-800 flex justify-end shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSyncModal(prev => ({ ...prev, open: false, errorMsg: '', successMsg: '' }))}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold text-xs uppercase tracking-wider border border-slate-700 transition-colors cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
